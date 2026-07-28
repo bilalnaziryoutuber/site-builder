@@ -22,12 +22,12 @@ import random
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from google import genai
 
-# Use a model that is currently available to all users
-MODEL_NAME = "gemini-1.5-flash"   # <-- changed from gemini-2.5-flash
+# Use a stable, widely available model
+MODEL_NAME = "gemini-1.5-pro"   # <-- changed to gemini-1.5-pro
 CONFIG_DIR = Path("config")
 REGISTRY_FILE = CONFIG_DIR / "tools.json"
 
