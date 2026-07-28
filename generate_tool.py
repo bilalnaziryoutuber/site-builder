@@ -26,7 +26,8 @@ from typing import Any, Dict, List, Optional
 
 from google import genai
 
-MODEL_NAME = "gemini-2.5-flash"  # or the latest Flash model
+# Use a model that is currently available to all users
+MODEL_NAME = "gemini-1.5-flash"   # <-- changed from gemini-2.5-flash
 CONFIG_DIR = Path("config")
 REGISTRY_FILE = CONFIG_DIR / "tools.json"
 
