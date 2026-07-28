@@ -30,8 +30,8 @@ from google.genai import types
 CONFIG_DIR = Path("config")
 REGISTRY_FILE = CONFIG_DIR / "tools.json"
 
-# List of candidate models to try (ordered by preference)
-CANDIDATE_MODELS = [
+# Known fallback models if the API doesn't return any suitable ones
+FALLBACK_MODELS = [
     "gemini-2.0-flash-exp",
     "gemini-1.5-flash",
     "gemini-1.5-pro",
@@ -138,43 +138,86 @@ def write_registry(registry: List[Dict[str, Any]]) -> None:
         f.write("\n")
 
 
-def generate_tool_definition_with_fallback(tool_idea: str, client: genai.Client) -> tuple[Dict[str, Any], str]:
+def get_available_model(client: genai.Client) -> str:
     """
-    Try each candidate model until one succeeds. Returns (definition, model_used).
+    Query the API for a list of models and pick one that supports generateContent.
+    Returns a model name string, or raises an error if none found.
     """
-    last_error = None
-    for model_name in CANDIDATE_MODELS:
-        print(f"Attempting with model: {model_name}")
-        try:
-            response = client.models.generate_content(
-                model=model_name,
-                contents=build_tool_prompt(tool_idea),
-            )
-            if not response.text:
-                raise RuntimeError("Empty response from Gemini.")
-            definition = extract_json(response.text)
-            # Validate required fields
-            required = ["id", "slug", "subdomain", "category", "title", "description",
-                        "systemPrompt", "jsonSchema", "seo"]
-            for field in required:
-                if field not in definition:
-                    raise ValueError(f"Missing required field '{field}' in Gemini response.")
-            # Success
-            print(f"✅ Success with model: {model_name}")
-            return definition, model_name
-        except Exception as e:
-            # Check if it's a 404 or model not found error
-            error_msg = str(e)
-            if "404" in error_msg or "not found" in error_msg.lower() or "not supported" in error_msg.lower():
-                print(f"   Model {model_name} not available: {e}")
-                last_error = e
+    try:
+        models = client.models.list()
+        # Filter to models that support generateContent and have 'gemini' in name
+        candidates = []
+        for model in models:
+            if hasattr(model, 'supported_generation_methods') and 'generateContent' in model.supported_generation_methods:
+                if 'gemini' in model.name.lower():
+                    candidates.append(model.name)
+        if candidates:
+            # Prefer flash models (faster, cheaper) but take the first found
+            # You could sort or pick a specific one
+            selected = candidates[0]
+            print(f"Found available model from API: {selected}")
+            return selected
+        else:
+            print("No suitable models found via API. Falling back to hardcoded list.")
+            # Fallback: try each hardcoded model until one works
+            for model_name in FALLBACK_MODELS:
+                try:
+                    # Quick test: call generate_content with a minimal prompt to see if it works
+                    test_response = client.models.generate_content(
+                        model=model_name,
+                        contents="Hello"
+                    )
+                    if test_response.text:
+                        print(f"Fallback model {model_name} is available.")
+                        return model_name
+                except Exception:
+                    continue
+            raise RuntimeError("No working Gemini model found.")
+    except Exception as e:
+        print(f"Error listing models: {e}. Using fallback list.")
+        # Fallback to trying each hardcoded model
+        for model_name in FALLBACK_MODELS:
+            try:
+                test_response = client.models.generate_content(
+                    model=model_name,
+                    contents="Hello"
+                )
+                if test_response.text:
+                    print(f"Fallback model {model_name} is available.")
+                    return model_name
+            except Exception:
                 continue
-            else:
-                # Other errors (e.g., JSON parsing) – we could retry, but we'll raise
-                print(f"   Unexpected error with {model_name}: {e}")
-                raise
-    # If we exhaust all models
-    raise RuntimeError(f"All candidate models failed. Last error: {last_error}")
+        raise RuntimeError("No working Gemini model found.")
+
+
+def generate_tool_definition(tool_idea: str, client: genai.Client, model_name: str) -> Dict[str, Any]:
+    """Generate a tool definition using the specified model."""
+    prompt = build_tool_prompt(tool_idea)
+    print(f"Generating with model: {model_name}")
+
+    response = client.models.generate_content(
+        model=model_name,
+        contents=prompt,
+    )
+
+    if not response.text:
+        raise RuntimeError("Empty response from Gemini.")
+
+    try:
+        definition = extract_json(response.text)
+    except (json.JSONDecodeError, ValueError) as e:
+        raw_file = REGISTRY_FILE.parent / "error_response.txt"
+        raw_file.write_text(response.text, encoding="utf-8")
+        raise RuntimeError(f"Failed to parse Gemini response as JSON. Raw response saved to {raw_file}") from e
+
+    # Validate required fields
+    required = ["id", "slug", "subdomain", "category", "title", "description",
+                "systemPrompt", "jsonSchema", "seo"]
+    for field in required:
+        if field not in definition:
+            raise ValueError(f"Missing required field '{field}' in Gemini response.")
+
+    return definition
 
 
 def main() -> None:
@@ -189,7 +232,10 @@ def main() -> None:
     client = genai.Client(api_key=api_key)
 
     try:
-        new_tool, used_model = generate_tool_definition_with_fallback(tool_idea, client)
+        # Get a working model
+        model_name = get_available_model(client)
+        # Generate the definition
+        new_tool = generate_tool_definition(tool_idea, client, model_name)
     except Exception as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
@@ -220,7 +266,7 @@ def main() -> None:
         with open(github_output, "a", encoding="utf-8") as f:
             f.write(f"tool_id={new_tool['id']}\n")
             f.write(f"tool_title={new_tool['title']}\n")
-            f.write(f"model_used={used_model}\n")
+            f.write(f"model_used={model_name}\n")
 
 
 if __name__ == "__main__":
