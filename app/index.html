@@ -3,51 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freelance Tax Hub & Invoice Saver</title>
-    <!-- Tailwind CSS CDN -->
+    <title>SoloTax - Interactive Freelance Tax Calculator & Write-Off Simulator</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts (Inter) -->
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
         }
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+        .font-display {
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
-        input[type=number] {
-            -moz-appearance: textfield;
+        /* Custom Scrollbar for modern look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
         }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-slate-900">
+<body class="text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-slate-900">
 
-    <!-- Header -->
+    <!-- Header / Navigation -->
     <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="bg-emerald-500 text-slate-950 p-2.5 rounded-xl font-black tracking-wider flex items-center justify-center">
-                    <i class="fa-solid fa-calculator text-lg"></i>
+            <div class="flex items-center gap-2.5">
+                <div class="bg-gradient-to-tr from-emerald-400 to-teal-500 p-2 rounded-xl shadow-lg shadow-emerald-500/10">
+                    <svg class="w-6 h-6 text-slate-950" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                 </div>
                 <div>
-                    <span class="font-bold text-lg tracking-tight block">Freelance Tax Hub</span>
-                    <span class="text-xs text-slate-400 font-medium -mt-1 block">Real-time Estimator & Saver</span>
+                    <span class="font-display font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">SoloTax</span>
+                    <span class="text-xs block text-slate-400 font-medium -mt-1">2024 Freelance Tax Suite</span>
                 </div>
             </div>
-            <div class="flex items-center space-x-4">
-                <button onclick="resetData()" class="text-slate-400 hover:text-rose-400 text-sm font-medium flex items-center space-x-1.5 transition-colors duration-150 py-2 px-3 rounded-lg hover:bg-slate-800/50">
-                    <i class="fa-solid fa-rotate-left"></i>
-                    <span class="hidden sm:inline">Reset Form</span>
-                </button>
-                <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium flex items-center space-x-1.5 transition-colors duration-150 py-2 px-3.5 rounded-lg border border-slate-700">
-                    <i class="fa-solid fa-print"></i>
-                    <span class="hidden sm:inline">Export PDF</span>
+            <div class="flex items-center gap-4">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    US 2024 Tax Rules
+                </span>
+                <button onclick="resetAll()" class="text-slate-400 hover:text-slate-200 transition text-sm flex items-center gap-1">
+                    <i class="fa-solid fa-rotate-left text-xs"></i> Reset
                 </button>
             </div>
         </div>
@@ -55,508 +79,654 @@
 
     <!-- Main Content Grid -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Quick Warning / Info Alert -->
-        <div class="mb-8 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start space-x-3 text-amber-200/90 text-sm leading-relaxed">
-            <i class="fa-solid fa-circle-info text-amber-400 mt-0.5 text-base flex-shrink-0"></i>
-            <p>
-                <strong>Tax Estimation Tool:</strong> Calculated figures are based on simplified standard 2024 US tax algorithms (15.3% Self-Employment tax and single filer standard deductions). Use this as a guide to save money, not as a replacement for certified CPA advice.
-            </p>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            <!-- LEFT COLUMN: Inputs & Config (7 Columns on large screens) -->
-            <section class="lg:col-span-7 space-y-8">
-                
-                <!-- Card 1: Annual Projections -->
-                <div class="bg-slate-800/50 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur">
-                    <div class="flex items-center space-x-3 mb-6">
-                        <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
-                            <i class="fa-solid fa-briefcase"></i>
-                        </div>
-                        <h2 class="text-xl font-semibold">1. Annual Projections</h2>
+            <!-- Left Side: Inputs & Settings (5 Cols) -->
+            <section class="lg:col-span-5 space-y-6">
+                <!-- Profile & Income Settings -->
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 backdrop-blur shadow-xl">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold text-sm">1</div>
+                        <h2 class="font-display font-semibold text-lg text-white">Income & Profile</h2>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-5">
+                        <!-- Filing Status -->
                         <div>
-                            <label class="block text-sm font-medium text-slate-400 mb-2">Estimated Annual Gross Income</label>
-                            <div class="relative">
-                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">$</span>
-                                <input type="number" id="annualGross" value="85000" oninput="calculateTaxes()" class="w-full bg-slate-900/80 border border-slate-700 focus:border-emerald-500 rounded-xl py-3 pl-9 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-semibold tracking-wide transition duration-150">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Filing Status</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="setFilingStatus('single')" id="btn-status-single" class="py-2.5 px-4 rounded-xl border font-medium text-sm transition-all duration-200 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-lg shadow-emerald-500/5">
+                                    Single Filer
+                                </button>
+                                <button onclick="setFilingStatus('married')" id="btn-status-married" class="py-2.5 px-4 rounded-xl border border-slate-700 hover:border-slate-600 bg-slate-900/50 text-slate-400 font-medium text-sm transition-all duration-200">
+                                    Married Joint
+                                </button>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1.5">Total expected earnings from clients.</p>
                         </div>
 
+                        <!-- Annual Gross Income Input -->
                         <div>
-                            <label class="block text-sm font-medium text-slate-400 mb-2">Estimated Business Expenses</label>
-                            <div class="relative">
-                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">$</span>
-                                <input type="number" id="annualExpenses" value="12000" oninput="calculateTaxes()" class="w-full bg-slate-900/80 border border-slate-700 focus:border-emerald-500 rounded-xl py-3 pl-9 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-semibold tracking-wide transition duration-150">
+                            <label for="input-gross" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex justify-between">
+                                <span>Estimated Gross Income</span>
+                                <span class="text-emerald-400 normal-case" id="gross-period-label">Annual</span>
+                            </label>
+                            <div class="relative rounded-xl shadow-sm">
+                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                                    <span class="text-slate-400 font-semibold">$</span>
+                                </div>
+                                <input type="number" id="input-gross" value="85000" oninput="calculateTaxes()" class="block w-full rounded-xl border-slate-700 bg-slate-900/70 py-3 pl-9 pr-12 text-white font-medium focus:border-emerald-500 focus:ring-emerald-500/20 text-lg transition border focus:ring-4 outline-none" placeholder="0.00">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-slate-500 text-sm font-semibold">USD</span>
+                                </div>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1.5">Software, hardware, legal, hosting, etc.</p>
+                            <p class="text-[11px] text-slate-500 mt-1.5">All 1099, client payments, or contract income combined.</p>
                         </div>
-                    </div>
 
-                    <div class="mt-6 pt-6 border-t border-slate-700/50 flex flex-wrap justify-between items-center gap-4">
+                        <!-- State Selector -->
                         <div>
-                            <span class="text-xs text-slate-400 block uppercase tracking-wider font-semibold">Net Business Income</span>
-                            <span class="text-2xl font-bold text-white" id="netIncomeDisplay">$0.00</span>
-                        </div>
-                        <div class="bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5">
-                            <i class="fa-solid fa-wallet"></i>
-                            <span id="taxableRatio">0% Net Margin</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card 2: Tax Settings -->
-                <div class="bg-slate-800/50 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur">
-                    <div class="flex items-center space-x-3 mb-6">
-                        <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg">
-                            <i class="fa-solid fa-sliders"></i>
-                        </div>
-                        <h2 class="text-xl font-semibold">2. Filing & Location Settings</h2>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-400 mb-2">Filing Status</label>
-                            <select id="filingStatus" onchange="calculateTaxes()" class="w-full bg-slate-900/80 border border-slate-700 focus:border-emerald-500 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-medium transition duration-150">
-                                <option value="single">Single Filer</option>
-                                <option value="joint">Married Filing Jointly</option>
+                            <label for="input-state" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">State Tax Estimate</label>
+                            <select id="input-state" onchange="calculateTaxes()" class="block w-full rounded-xl border border-slate-700 bg-slate-900/70 py-3 px-4 text-white font-medium focus:border-emerald-500 focus:ring-emerald-500/20 text-sm transition outline-none">
+                                <option value="0">No State Income Tax (TX, FL, WA, etc.)</option>
+                                <option value="0.04">Low State Tax (~4% e.g. AZ, CO)</option>
+                                <option value="0.06" selected>Average State Tax (~6% e.g. GA, IL, NC)</option>
+                                <option value="0.09">High State Tax (~9% e.g. CA, NY, OR)</option>
                             </select>
-                            <p class="text-xs text-slate-500 mt-1.5">Determines the federal income tax brackets.</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-400 mb-2">Est. State & Local Tax Rate (%)</label>
-                            <div class="relative">
-                                <input type="number" id="stateTaxRate" value="5" step="0.1" oninput="calculateTaxes()" class="w-full bg-slate-900/80 border border-slate-700 focus:border-emerald-500 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-semibold tracking-wide transition duration-150">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">%</span>
-                            </div>
-                            <p class="text-xs text-slate-500 mt-1.5">E.g., CA is roughly 1-13%, TX is 0%.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Card 3: Live Invoice Saver / Splitter -->
-                <div class="bg-gradient-to-br from-indigo-900/30 via-slate-800/50 to-emerald-900/20 border border-emerald-500/20 rounded-2xl p-6 shadow-xl backdrop-blur relative overflow-hidden">
-                    <div class="absolute top-0 right-0 h-40 w-40 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
-                    <div class="absolute bottom-0 left-0 h-40 w-40 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                <!-- Business Expenses & Deductions -->
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 backdrop-blur shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-sm">2</div>
+                            <h2 class="font-display font-semibold text-lg text-white">Business Expenses</h2>
+                        </div>
+                        <span id="expense-total-badge" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Total: $12,500</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-5">Deductible expenses reduce your taxable profit. Fill in standard categories below or use our write-off simulator.</p>
+
+                    <div class="space-y-4">
+                        <!-- Expense Slider Inputs -->
+                        <div>
+                            <div class="flex justify-between text-xs font-medium mb-1.5">
+                                <span class="text-slate-300">Software & Subscriptions</span>
+                                <span class="text-indigo-400 font-bold" id="label-val-software">$1,500</span>
+                            </div>
+                            <input type="range" id="input-exp-software" min="0" max="15000" step="100" value="1500" oninput="updateExpenseSlider('software')" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-medium mb-1.5">
+                                <span class="text-slate-300">Home Office & Utilities</span>
+                                <span class="text-indigo-400 font-bold" id="label-val-office">$4,800</span>
+                            </div>
+                            <input type="range" id="input-exp-office" min="0" max="25000" step="200" value="4800" oninput="updateExpenseSlider('office')" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-medium mb-1.5">
+                                <span class="text-slate-300">Equipment, Hardware & Furniture</span>
+                                <span class="text-indigo-400 font-bold" id="label-val-equip">$3,200</span>
+                            </div>
+                            <input type="range" id="input-exp-equip" min="0" max="20000" step="200" value="3200" oninput="updateExpenseSlider('equip')" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-medium mb-1.5">
+                                <span class="text-slate-300">Marketing & Professional Services</span>
+                                <span class="text-indigo-400 font-bold" id="label-val-marketing">$3,000</span>
+                            </div>
+                            <input type="range" id="input-exp-marketing" min="0" max="20000" step="200" value="3000" oninput="updateExpenseSlider('marketing')" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        </div>
+
+                        <!-- Custom Lump Sum Expense -->
+                        <div class="pt-3 border-t border-slate-700/60">
+                            <label for="input-exp-other" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Other Miscellaneous Expenses</label>
+                            <div class="relative rounded-xl shadow-sm">
+                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <span class="text-slate-500">$</span>
+                                </div>
+                                <input type="number" id="input-exp-other" value="0" oninput="calculateTaxes()" class="block w-full rounded-xl border border-slate-700 bg-slate-900/40 py-2 pl-7 pr-3 text-white text-sm focus:border-indigo-500 focus:ring-indigo-500/15 outline-none transition" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Write-off Interactive Simulator -->
+                <div class="bg-gradient-to-br from-indigo-950/40 via-slate-800/40 to-emerald-950/30 border border-indigo-500/20 rounded-2xl p-6 backdrop-blur relative overflow-hidden shadow-xl">
+                    <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                        <i class="fa-solid fa-piggy-bank text-8xl"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-amber-400"></i>
+                        Live Write-Off Simulator
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4">Want to buy something for your business? Enter its price below to instantly see your real net cost after tax savings.</p>
                     
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="p-2 bg-emerald-500 text-slate-950 rounded-lg">
-                                <i class="fa-solid fa-piggy-bank"></i>
-                            </div>
-                            <h2 class="text-xl font-bold">The Invoice Saver Utility</h2>
-                        </div>
-                        <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-semibold">Highly Useful</span>
-                    </div>
-                    <p class="text-sm text-slate-400 mb-6 leading-relaxed">
-                        Received a custom payment from a client? Put the invoice amount below to instantly know how much to stash away in your savings account and how much you can safely spend.
-                    </p>
-
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                        <div class="md:col-span-5">
-                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Invoice Amount</label>
-                            <div class="relative">
-                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">$</span>
-                                <input type="number" id="invoiceInput" value="2500" oninput="calculateInvoiceSplit()" class="w-full bg-slate-900 border-2 border-emerald-500/30 focus:border-emerald-500 rounded-xl py-3.5 pl-9 pr-4 text-white focus:outline-none focus:ring-4 focus:ring-emerald-500/15 font-bold text-lg tracking-wide transition duration-150">
-                            </div>
-                        </div>
-
-                        <div class="md:col-span-7 grid grid-cols-2 gap-4">
-                            <div class="bg-slate-900/60 p-4 rounded-xl border border-rose-500/20">
-                                <span class="text-slate-400 text-xs font-medium block mb-1 flex items-center space-x-1.5">
-                                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                                    <span>Move to Taxes</span>
-                                </span>
-                                <span class="text-lg font-bold text-rose-400" id="invoiceTaxSave">$0.00</span>
-                                <span class="text-xs text-slate-500 block mt-0.5" id="invoiceTaxPercent">0%</span>
-                            </div>
-
-                            <div class="bg-slate-900/60 p-4 rounded-xl border border-emerald-500/20">
-                                <span class="text-slate-400 text-xs font-medium block mb-1 flex items-center space-x-1.5">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                    <span>Safe to Spend</span>
-                                </span>
-                                <span class="text-lg font-bold text-emerald-400" id="invoiceSafeToSpend">$0.00</span>
-                                <span class="text-xs text-slate-500 block mt-0.5" id="invoiceSpendPercent">0%</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </section>
-
-            <!-- RIGHT COLUMN: Estimator Outputs & Checklist (5 Columns on large screens) -->
-            <section class="lg:col-span-5 space-y-8">
-                
-                <!-- Tax Projection Summary Card -->
-                <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 shadow-xl backdrop-blur relative overflow-hidden">
-                    <h2 class="text-lg font-bold mb-4 flex items-center space-x-2">
-                        <i class="fa-solid fa-chart-pie text-emerald-400"></i>
-                        <span>Estimated Tax Bite</span>
-                    </h2>
-
-                    <!-- Stacked Bar Chart Visualization -->
-                    <div class="h-6 w-full bg-slate-900 rounded-full flex overflow-hidden mb-6 border border-slate-700">
-                        <div id="barSeTax" class="bg-rose-500 transition-all duration-300 h-full" style="width: 15%"></div>
-                        <div id="barFedTax" class="bg-amber-500 transition-all duration-300 h-full" style="width: 15%"></div>
-                        <div id="barStateTax" class="bg-indigo-500 transition-all duration-300 h-full" style="width: 10%"></div>
-                        <div id="barTakeHome" class="bg-emerald-500 transition-all duration-300 h-full" style="width: 60%"></div>
-                    </div>
-
-                    <!-- Chart Legend & Math -->
-                    <div class="space-y-4 text-sm">
-                        <div class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-800">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-3.5 h-3.5 rounded-md bg-rose-500"></div>
-                                <span class="font-medium">Self-Employment Tax</span>
-                            </div>
-                            <span class="font-semibold text-white" id="seTaxVal">$0.00</span>
-                        </div>
-
-                        <div class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-800">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-3.5 h-3.5 rounded-md bg-amber-500"></div>
-                                <span class="font-medium">Federal Income Tax</span>
-                            </div>
-                            <span class="font-semibold text-white" id="fedTaxVal">$0.00</span>
-                        </div>
-
-                        <div class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-800">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-3.5 h-3.5 rounded-md bg-indigo-500"></div>
-                                <span class="font-medium">Estimated State Tax</span>
-                            </div>
-                            <span class="font-semibold text-white" id="stateTaxVal">$0.00</span>
-                        </div>
-
-                        <div class="pt-4 border-t border-slate-700/60 flex items-center justify-between text-base">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-3.5 h-3.5 rounded-md bg-emerald-500"></div>
-                                <span class="font-bold text-white">Net Take-Home Pay</span>
-                            </div>
-                            <span class="font-extrabold text-emerald-400" id="takeHomeVal">$0.00</span>
-                        </div>
-                    </div>
-
-                    <!-- Effective Tax Rate badge -->
-                    <div class="mt-6 p-4 bg-slate-900 rounded-xl flex items-center justify-between border border-slate-800">
-                        <div class="text-xs text-slate-400 uppercase font-semibold tracking-wider">Overall Effective Tax Rate</div>
-                        <div class="text-xl font-bold text-rose-400" id="effectiveTaxRate">0.0%</div>
-                    </div>
-                </div>
-
-                <!-- Quarterly Deadlines Tracker & Interactive Checklist -->
-                <div class="bg-slate-800/50 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg">
-                                <i class="fa-solid fa-calendar-days"></i>
-                            </div>
-                            <h2 class="text-lg font-bold">Estimated Deadlines</h2>
-                        </div>
-                        <span class="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded uppercase tracking-widest font-black">2024</span>
-                    </div>
-
-                    <!-- Next Deadline Countdown -->
-                    <div class="mb-6 p-4 bg-indigo-950/40 rounded-xl border border-indigo-500/20 flex justify-between items-center">
+                    <div class="grid grid-cols-2 gap-4 items-end">
                         <div>
-                            <span class="text-xs text-indigo-300 font-semibold uppercase tracking-wider block">Next Due Date</span>
-                            <span class="text-sm font-bold text-white block mt-0.5" id="nextDeadlineName">Determining...</span>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Purchase Cost</label>
+                            <div class="relative rounded-lg">
+                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <span class="text-slate-500 text-xs">$</span>
+                                </div>
+                                <input type="number" id="sim-expense-cost" value="1200" oninput="calculateWriteoffSavings()" class="block w-full rounded-lg border border-slate-700 bg-slate-900/60 py-1.5 pl-7 text-xs text-white focus:border-indigo-500 focus:ring-0 outline-none">
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <span class="text-xs text-indigo-300 font-medium block">Days Remaining</span>
-                            <span class="text-lg font-extrabold text-white" id="countdownDays">-</span>
+                        <button onclick="applySimulateWriteoff()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2 px-4 rounded-lg transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/10">
+                            <i class="fa-solid fa-plus text-[10px]"></i> Apply to Expenses
+                        </button>
+                    </div>
+
+                    <!-- Simulator Output Cards -->
+                    <div class="grid grid-cols-2 gap-3 mt-4">
+                        <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700/50">
+                            <span class="block text-[10px] text-slate-400 font-medium">Estimated Tax Saving</span>
+                            <span id="sim-tax-saving" class="block font-bold text-base text-emerald-400 mt-0.5">$0</span>
+                        </div>
+                        <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700/50">
+                            <span class="block text-[10px] text-slate-400 font-medium">Your Actual Cost</span>
+                            <span id="sim-actual-cost" class="block font-bold text-base text-white mt-0.5">$0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Side: Outputs & Insights (7 Cols) -->
+            <section class="lg:col-span-7 space-y-6">
+                <!-- Primary Take Home Dashboard -->
+                <div class="bg-slate-800/80 border border-slate-700/50 rounded-3xl p-6 sm:p-8 backdrop-blur shadow-2xl relative overflow-hidden">
+                    <div class="absolute -right-16 -top-16 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute -left-16 -bottom-16 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-700/50">
+                        <div>
+                            <span class="text-xs uppercase font-bold tracking-widest text-emerald-400 block mb-1">Take-Home Pay Estimate</span>
+                            <h1 class="text-4xl sm:text-5xl font-extrabold font-display text-white tracking-tight" id="pay-take-home">$0</h1>
+                        </div>
+                        <div class="flex sm:flex-col items-start gap-1 justify-between sm:justify-start bg-slate-900/60 sm:bg-transparent p-3 sm:p-0 rounded-xl border border-slate-700/50 sm:border-0">
+                            <span class="text-xs text-slate-400 font-medium">Estimated Effective Tax Rate</span>
+                            <span class="text-2xl font-bold font-display text-emerald-400" id="tax-effective-rate">0.0%</span>
                         </div>
                     </div>
 
-                    <!-- Interactive Quarter Checklist -->
-                    <div class="space-y-3.5">
-                        <label class="flex items-center justify-between p-3 bg-slate-900/40 hover:bg-slate-900/60 transition rounded-xl cursor-pointer select-none">
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" id="q1Check" onclick="saveChecks()" class="w-4 h-4 text-emerald-500 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500 focus:ring-offset-slate-900 focus:ring-2">
-                                <span class="text-sm font-medium text-slate-300">Q1 Deadline: <span class="text-slate-400 font-normal">April 15, 2024</span></span>
+                    <!-- Breakdown Slider Chart -->
+                    <div class="my-8">
+                        <div class="flex justify-between text-xs text-slate-400 font-semibold mb-3">
+                            <span>Income Breakdown Pool</span>
+                            <span>100% of Gross Revenue</span>
+                        </div>
+                        <div class="h-6 w-full rounded-full bg-slate-900 overflow-hidden flex shadow-inner border border-slate-800">
+                            <!-- Take Home portion -->
+                            <div id="bar-takehome" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300 flex items-center justify-center text-[10px] font-bold text-slate-950" style="width: 60%"></div>
+                            <!-- Expenses portion -->
+                            <div id="bar-expenses" class="h-full bg-indigo-500 transition-all duration-300 flex items-center justify-center text-[10px] font-bold text-white border-l border-slate-900" style="width: 15%"></div>
+                            <!-- Taxes portion -->
+                            <div id="bar-taxes" class="h-full bg-rose-500 transition-all duration-300 flex items-center justify-center text-[10px] font-bold text-white border-l border-slate-900" style="width: 25%"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-4 text-[11px] text-slate-400 font-medium">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-3 h-3 rounded bg-gradient-to-r from-emerald-500 to-teal-400 block"></span>
+                                <span>Take-Home Pay (<span id="pct-takehome">60%</span>)</span>
                             </div>
-                            <span class="text-xs text-slate-500">Check when paid</span>
-                        </label>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-3 h-3 rounded bg-indigo-500 block"></span>
+                                <span>Expenses (<span id="pct-expenses">15%</span>)</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-3 h-3 rounded bg-rose-500 block"></span>
+                                <span>Total Taxes (<span id="pct-taxes">25%</span>)</span>
+                            </div>
+                        </div>
+                    </div>
 
-                        <label class="flex items-center justify-between p-3 bg-slate-900/40 hover:bg-slate-900/60 transition rounded-xl cursor-pointer select-none">
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" id="q2Check" onclick="saveChecks()" class="w-4 h-4 text-emerald-500 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500 focus:ring-offset-slate-900 focus:ring-2">
-                                <span class="text-sm font-medium text-slate-300">Q2 Deadline: <span class="text-slate-400 font-normal">June 17, 2024</span></span>
-                            </div>
-                            <span class="text-xs text-slate-500">Check when paid</span>
-                        </label>
+                    <!-- Detailed Cost Breakdown List -->
+                    <div class="space-y-3.5 pt-2">
+                        <!-- Gross -->
+                        <div class="flex items-center justify-between text-sm py-2 px-3 rounded-lg hover:bg-slate-700/20 transition">
+                            <span class="text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-hand-holding-dollar text-slate-400 w-4"></i>
+                                Total Gross Income
+                            </span>
+                            <span class="font-semibold text-white" id="val-gross">$0</span>
+                        </div>
+                        <!-- Business Deductions -->
+                        <div class="flex items-center justify-between text-sm py-2 px-3 rounded-lg hover:bg-slate-700/20 transition">
+                            <span class="text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-receipt text-indigo-400 w-4"></i>
+                                Business Expenses (Write-Offs)
+                            </span>
+                            <span class="font-semibold text-indigo-300" id="val-expenses">-$0</span>
+                        </div>
+                        <!-- Adjusted Net Income -->
+                        <div class="flex items-center justify-between text-sm py-2 px-3 rounded-xl bg-slate-900/50 border border-slate-700/30">
+                            <span class="text-white font-medium flex items-center gap-2">
+                                <i class="fa-solid fa-wallet text-emerald-400 w-4"></i>
+                                Net Taxable Profit
+                            </span>
+                            <span class="font-bold text-white" id="val-net-profit">$0</span>
+                        </div>
 
-                        <label class="flex items-center justify-between p-3 bg-slate-900/40 hover:bg-slate-900/60 transition rounded-xl cursor-pointer select-none">
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" id="q3Check" onclick="saveChecks()" class="w-4 h-4 text-emerald-500 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500 focus:ring-offset-slate-900 focus:ring-2">
-                                <span class="text-sm font-medium text-slate-300">Q3 Deadline: <span class="text-slate-400 font-normal">Sept 16, 2024</span></span>
-                            </div>
-                            <span class="text-xs text-slate-500">Check when paid</span>
-                        </label>
+                        <!-- Spacer line -->
+                        <hr class="border-slate-700/50 my-2">
 
-                        <label class="flex items-center justify-between p-3 bg-slate-900/40 hover:bg-slate-900/60 transition rounded-xl cursor-pointer select-none">
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" id="q4Check" onclick="saveChecks()" class="w-4 h-4 text-emerald-500 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500 focus:ring-offset-slate-900 focus:ring-2">
-                                <span class="text-sm font-medium text-slate-300">Q4 Deadline: <span class="text-slate-400 font-normal">Jan 15, 2025</span></span>
-                            </div>
-                            <span class="text-xs text-slate-500">Check when paid</span>
-                        </label>
+                        <!-- SE Tax -->
+                        <div class="flex items-center justify-between text-sm py-2 px-3 rounded-lg hover:bg-slate-700/20 transition">
+                            <span class="text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved text-rose-400 w-4"></i>
+                                Self-Employment Tax (15.3%)
+                                <button class="group relative" onclick="toggleTooltip('se-info')">
+                                    <i class="fa-regular fa-circle-question text-slate-500 hover:text-slate-300"></i>
+                                    <span id="se-info" class="hidden absolute bottom-6 left-1/2 transform -translate-x-1/2 w-64 p-2 bg-slate-950 text-xs text-slate-300 rounded shadow-lg z-20 font-normal">
+                                        Covers Social Security and Medicare taxes. Calculated on 92.35% of your net freelance profit.
+                                    </span>
+                                </button>
+                            </span>
+                            <span class="font-semibold text-rose-300" id="val-se-tax">$0</span>
+                        </div>
+                        <!-- Fed Tax -->
+                        <div class="flex items-center justify-between text-sm py-2 px-3 rounded-lg hover:bg-slate-700/20 transition">
+                            <span class="text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-landmark text-rose-400 w-4"></i>
+                                Federal Income Tax (Est. Progressive)
+                            </span>
+                            <span class="font-semibold text-rose-300" id="val-fed-tax">$0</span>
+                        </div>
+                        <!-- State Tax -->
+                        <div class="flex items-center justify-between text-sm py-2 px-3 rounded-lg hover:bg-slate-700/20 transition">
+                            <span class="text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-map text-rose-400 w-4"></i>
+                                State Income Tax (Est. Standard)
+                            </span>
+                            <span class="font-semibold text-rose-300" id="val-state-tax">$0</span>
+                        </div>
+
+                        <!-- Combined Taxes -->
+                        <div class="flex items-center justify-between text-sm py-2 px-3 rounded-xl bg-rose-950/20 border border-rose-500/20">
+                            <span class="text-rose-200 font-semibold flex items-center gap-2">
+                                <i class="fa-solid fa-scale-balanced text-rose-400 w-4"></i>
+                                Total Estimated Tax Burden
+                            </span>
+                            <span class="font-bold text-rose-300" id="val-total-tax">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quarterly Payment Planner -->
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 backdrop-blur shadow-xl">
+                    <h3 class="font-display font-semibold text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-teal-400"></i>
+                        Quarterly Estimated Tax Planner
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-5">The IRS expects freelancers to pay estimated taxes quarterly. Here is what you should set aside for each deadline.</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div class="sm:col-span-2 bg-slate-900/60 p-4 rounded-xl border border-slate-700/40">
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Per Quarter Payment</span>
+                            <span class="block text-2xl font-extrabold text-teal-400 mt-1" id="quarterly-estimate">$0</span>
+                            <span class="text-[10px] text-slate-500 mt-1 block">Due: Apr 15, Jun 15, Sep 15, Jan 15</span>
+                        </div>
+                        <div class="sm:col-span-2 flex flex-col justify-center space-y-1 bg-slate-900/30 p-4 rounded-xl border border-slate-700/20">
+                            <span class="text-[11px] text-slate-300 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span>
+                                Reserve <strong>~<span id="reserve-percent">0%</span></strong> of every check.
+                            </span>
+                            <span class="text-[11px] text-slate-400">Open a dedicated savings account for taxes to avoid cash-flow surprises.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expense Savings Tips & Intelligence -->
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 backdrop-blur shadow-xl">
+                    <h3 class="font-display font-semibold text-white mb-4 flex items-center gap-2">
+                        <i class="fa-regular fa-lightbulb text-amber-400"></i>
+                        Smart Tax-Saving Tips
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/30 text-xs">
+                            <h4 class="font-semibold text-indigo-400 mb-1">Standard vs. Actual Auto Deductions</h4>
+                            <p class="text-slate-400 leading-relaxed">If you drive for business, choose standard mileage rates ($0.67/mile in 2024) or track individual costs like gas, lease, and repairs.</p>
+                        </div>
+                        <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/30 text-xs">
+                            <h4 class="font-semibold text-emerald-400 mb-1">Qualified Business Income (QBI)</h4>
+                            <p class="text-slate-400 leading-relaxed">You may deduct up to 20% of your net business income off your federal income tax base. This is modeled in our progressive estimates!</p>
+                        </div>
                     </div>
                 </div>
 
             </section>
-
         </div>
-
     </main>
 
-    <!-- Footer Disclaimer -->
-    <footer class="mt-auto bg-slate-950/60 border-t border-slate-800 py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500 space-y-2">
-            <p>Made for hard-working freelancers who want to navigate tax season with ease.</p>
-            <p>&copy; <span id="year"></span> Freelance Tax Hub. All values estimated based on general tax code heuristics. Local storage utilized to save settings securely on your own device.</p>
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-800 bg-slate-950 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left sm:flex sm:items-center sm:justify-between text-slate-500 text-xs">
+            <p>&copy; 2024 SoloTax. Built with precision for freelancers, solopreneurs, and contractors.</p>
+            <p class="mt-2 sm:mt-0 max-w-md text-slate-600 sm:text-right leading-normal">
+                Disclaimer: This calculator is for educational & simulation purposes only. Consult with a qualified Certified Public Accountant (CPA) for actual tax preparation.
+            </p>
         </div>
     </footer>
 
-    <!-- App Logic Script -->
+    <!-- All JavaScript Logic -->
     <script>
-        document.getElementById('year').textContent = new Date().getFullYear();
+        // Reactive State Storage
+        let state = {
+            filingStatus: 'single', // 'single' or 'married'
+            grossIncome: 85000,
+            stateTaxRate: 0.06,
+            expenses: {
+                software: 1500,
+                office: 4800,
+                equip: 3200,
+                marketing: 3000,
+                other: 0
+            },
+            simWriteoffPrice: 1200
+        };
 
-        // Standard 2024 Federal Income Tax Brackets (Simplified Single Filer after standard deduction of $14,600)
-        const FED_BRACKETS_SINGLE = [
-            { limit: 11600, rate: 0.10 },
-            { limit: 47150, rate: 0.12 },
-            { limit: 100525, rate: 0.22 },
-            { limit: 191950, rate: 0.24 },
-            { limit: 243725, rate: 0.32 },
-            { limit: 609350, rate: 0.35 },
-            { limit: Infinity, rate: 0.37 }
-        ];
+        // Initialize state from local storage if existing
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedState = localStorage.getItem('solotax_saved_state');
+            if (savedState) {
+                try {
+                    state = JSON.parse(savedState);
+                    // Sync values to UI inputs
+                    document.getElementById('input-gross').value = state.grossIncome;
+                    document.getElementById('input-state').value = state.stateTaxRate;
+                    document.getElementById('input-exp-software').value = state.expenses.software;
+                    document.getElementById('input-exp-office').value = state.expenses.office;
+                    document.getElementById('input-exp-equip').value = state.expenses.equip;
+                    document.getElementById('input-exp-marketing').value = state.expenses.marketing;
+                    document.getElementById('input-exp-other').value = state.expenses.other;
+                    document.getElementById('sim-expense-cost').value = state.simWriteoffPrice;
+                    updateUIFilingStatusBtn();
+                    updateLabelVals();
+                } catch (e) {
+                    console.error("Could not parse saved storage: ", e);
+                }
+            }
+            calculateTaxes();
+        });
 
-        // Standard 2024 Federal Income Tax Brackets (Simplified Married Joint after standard deduction of $29,200)
-        const FED_BRACKETS_JOINT = [
-            { limit: 23200, rate: 0.10 },
-            { limit: 94300, rate: 0.12 },
-            { limit: 201050, rate: 0.22 },
-            { limit: 383900, rate: 0.24 },
-            { limit: 487450, rate: 0.32 },
-            { limit: 731200, rate: 0.35 },
-            { limit: Infinity, rate: 0.37 }
-        ];
-
-        // Global variables holding calculated rates
-        let currentEffectiveTaxPercentage = 0;
-
-        // Formats numerical values to dollars
-        function formatDollar(num) {
-            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+        function saveState() {
+            localStorage.setItem('solotax_saved_state', JSON.stringify(state));
         }
 
-        // Calculation of Federal Income Tax
-        function calcFederalIncomeTax(taxableIncome, status) {
+        function setFilingStatus(status) {
+            state.filingStatus = status;
+            updateUIFilingStatusBtn();
+            calculateTaxes();
+        }
+
+        function updateUIFilingStatusBtn() {
+            const btnSingle = document.getElementById('btn-status-single');
+            const btnMarried = document.getElementById('btn-status-married');
+            const activeClass = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-lg shadow-emerald-500/5';
+            const inactiveClass = 'border-slate-700 hover:border-slate-600 bg-slate-900/50 text-slate-400';
+
+            if (state.filingStatus === 'single') {
+                btnSingle.className = `py-2.5 px-4 rounded-xl border font-medium text-sm transition-all duration-200 ${activeClass}`;
+                btnMarried.className = `py-2.5 px-4 rounded-xl border font-medium text-sm transition-all duration-200 ${inactiveClass}`;
+            } else {
+                btnSingle.className = `py-2.5 px-4 rounded-xl border font-medium text-sm transition-all duration-200 ${inactiveClass}`;
+                btnMarried.className = `py-2.5 px-4 rounded-xl border font-medium text-sm transition-all duration-200 ${activeClass}`;
+            }
+        }
+
+        function updateExpenseSlider(category) {
+            const value = parseFloat(document.getElementById(`input-exp-${category}`).value) || 0;
+            state.expenses[category] = value;
+            document.getElementById(`label-val-${category}`).textContent = formatCurrency(value);
+            calculateTaxes();
+        }
+
+        function updateLabelVals() {
+            Object.keys(state.expenses).forEach(category => {
+                if(category !== 'other') {
+                    document.getElementById(`label-val-${category}`).textContent = formatCurrency(state.expenses[category]);
+                }
+            });
+        }
+
+        function toggleTooltip(id) {
+            const element = document.getElementById(id);
+            element.classList.toggle('hidden');
+        }
+
+        function resetAll() {
+            localStorage.removeItem('solotax_saved_state');
+            state = {
+                filingStatus: 'single',
+                grossIncome: 85000,
+                stateTaxRate: 0.06,
+                expenses: {
+                    software: 1500,
+                    office: 4800,
+                    equip: 3200,
+                    marketing: 3000,
+                    other: 0
+                },
+                simWriteoffPrice: 1200
+            };
+            // Reload page to reset all fields effortlessly
+            window.location.reload();
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0,
+                minimumFractionDigits: 0
+            }).format(amount);
+        }
+
+        // Live Writeoff logic
+        function calculateWriteoffSavings() {
+            const cost = parseFloat(document.getElementById('sim-expense-cost').value) || 0;
+            state.simWriteoffPrice = cost;
+            
+            // Re-simulate taxes with additional hypothetical cost
+            const tempExpensesTotal = getExpensesTotal() + cost;
+            const netProfit = Math.max(0, state.grossIncome - tempExpensesTotal);
+            
+            // SE Tax Saving Estimation
+            const origNet = Math.max(0, state.grossIncome - getExpensesTotal());
+            const origSe = calculateSelfEmploymentTax(origNet);
+            const newSe = calculateSelfEmploymentTax(netProfit);
+            const seSaving = origSe - newSe;
+
+            // Simplified Marginal Fed Bracket saving (rough estimation)
+            // Combined rate (SE tax, Fed, State)
+            const combinedMarginalRate = 0.153 + getMarginalFedRate(origNet) + state.stateTaxRate;
+            const totalSaving = cost * combinedMarginalRate;
+
+            document.getElementById('sim-tax-saving').textContent = formatCurrency(totalSaving);
+            document.getElementById('sim-actual-cost').textContent = formatCurrency(Math.max(0, cost - totalSaving));
+            saveState();
+        }
+
+        function applySimulateWriteoff() {
+            const cost = parseFloat(document.getElementById('sim-expense-cost').value) || 0;
+            if (cost > 0) {
+                state.expenses.other += cost;
+                document.getElementById('input-exp-other').value = state.expenses.other;
+                document.getElementById('sim-expense-cost').value = 0;
+                calculateTaxes();
+                calculateWriteoffSavings();
+                // Alert visual effect
+                alert(`Added $${cost} to miscellaneous expenses!`);
+            }
+        }
+
+        function getExpensesTotal() {
+            return Object.values(state.expenses).reduce((a, b) => a + b, 0);
+        }
+
+        function getMarginalFedRate(netProfit) {
+            // Very basic marginal bracket return for write-off calculations
+            if (netProfit < 11600) return 0.10;
+            if (netProfit < 47150) return 0.12;
+            if (netProfit < 100525) return 0.22;
+            if (netProfit < 191950) return 0.24;
+            return 0.32;
+        }
+
+        // Standard SE Tax Calculation
+        function calculateSelfEmploymentTax(netProfit) {
+            if (netProfit <= 400) return 0;
+            const taxableSelfEmploymentIncome = netProfit * 0.9235;
+            // 15.3% tax (12.4% social security up to cap of $168,600 for 2024, plus 2.9% medicare)
+            const cap = 168600;
+            const ssTax = Math.min(taxableSelfEmploymentIncome, cap) * 0.124;
+            const medicareTax = taxableSelfEmploymentIncome * 0.029;
+            return ssTax + medicareTax;
+        }
+
+        // Fed Progressive Income Tax 2024
+        function calculateFederalIncomeTax(taxableIncome) {
             if (taxableIncome <= 0) return 0;
             
-            const brackets = status === 'joint' ? FED_BRACKETS_JOINT : FED_BRACKETS_SINGLE;
+            // 2024 Single brackets
+            let brackets = [
+                { limit: 11600, rate: 0.10 },
+                { limit: 47150, rate: 0.12 },
+                { limit: 100525, rate: 0.22 },
+                { limit: 191950, rate: 0.24 },
+                { limit: 243725, rate: 0.32 },
+                { limit: 609350, rate: 0.35 },
+                { limit: Infinity, rate: 0.37 }
+            ];
+
+            if (state.filingStatus === 'married') {
+                // 2024 Married Joint brackets
+                brackets = [
+                    { limit: 23200, rate: 0.10 },
+                    { limit: 94300, rate: 0.12 },
+                    { limit: 201050, rate: 0.22 },
+                    { limit: 383900, rate: 0.24 },
+                    { limit: 487450, rate: 0.32 },
+                    { limit: 731200, rate: 0.35 },
+                    { limit: Infinity, rate: 0.37 }
+                ];
+            }
+
             let tax = 0;
             let previousLimit = 0;
 
             for (let i = 0; i < brackets.length; i++) {
-                const currentLimit = brackets[i].limit;
-                const currentRate = brackets[i].rate;
-
-                if (taxableIncome > currentLimit) {
-                    tax += (currentLimit - previousLimit) * currentRate;
-                    previousLimit = currentLimit;
+                if (taxableIncome > brackets[i].limit) {
+                    tax += (brackets[i].limit - previousLimit) * brackets[i].rate;
+                    previousLimit = brackets[i].limit;
                 } else {
-                    tax += (taxableIncome - previousLimit) * currentRate;
+                    tax += (taxableIncome - previousLimit) * brackets[i].rate;
                     break;
                 }
             }
             return tax;
         }
 
-        // Core Calculation Engine
+        // MAIN CALCULATE ENGINE
         function calculateTaxes() {
-            // Read UI inputs
-            const annualGross = parseFloat(document.getElementById('annualGross').value) || 0;
-            const annualExpenses = parseFloat(document.getElementById('annualExpenses').value) || 0;
-            const filingStatus = document.getElementById('filingStatus').value;
-            const stateTaxRate = (parseFloat(document.getElementById('stateTaxRate').value) || 0) / 100;
+            // Read current primary values
+            state.grossIncome = parseFloat(document.getElementById('input-gross').value) || 0;
+            state.stateTaxRate = parseFloat(document.getElementById('input-state').value) || 0;
+            state.expenses.other = parseFloat(document.getElementById('input-exp-other').value) || 0;
 
-            // Save Inputs to LocalStorage
-            localStorage.setItem('taxHub_gross', annualGross);
-            localStorage.setItem('taxHub_expenses', annualExpenses);
-            localStorage.setItem('taxHub_status', filingStatus);
-            localStorage.setItem('taxHub_stateRate', document.getElementById('stateTaxRate').value);
+            // Total Expenses
+            const totalExpenses = getExpensesTotal();
+            document.getElementById('expense-total-badge').textContent = `Total: ${formatCurrency(totalExpenses)}`;
 
-            // Calculate Net Income (Schedule C equivalent)
-            const netIncome = Math.max(0, annualGross - annualExpenses);
-            document.getElementById('netIncomeDisplay').textContent = formatDollar(netIncome);
+            // Net Profit
+            const netProfit = Math.max(0, state.grossIncome - totalExpenses);
 
-            // Calculate Margin Ratio
-            const marginRatio = annualGross > 0 ? (netIncome / annualGross) * 100 : 0;
-            document.getElementById('taxableRatio').textContent = `${marginRatio.toFixed(1)}% Net Margin`;
+            // 1. Self-Employment Tax
+            const seTax = calculateSelfEmploymentTax(netProfit);
 
-            // 1. Self-Employment Tax (SE Tax)
-            // US Rule: SE tax is calculated on 92.35% of net business earnings. The tax rate is 15.3%.
-            const seTaxableEarnings = netIncome * 0.9235;
-            // Up to the Social Security wage limit of $168,600 for 2024, tax is 12.4% SS + 2.9% Medicare.
-            // Simplified estimate of 15.3% SE tax.
-            const seTax = seTaxableEarnings * 0.153;
-
-            // 2. Adjustments to Income (Deductions)
-            // Deduct half of self-employment tax from adjusted gross income
-            const halfSeTaxDeduction = seTax / 2;
-            const standardDeduction = filingStatus === 'joint' ? 29200 : 14600;
-            const taxableIncome = Math.max(0, netIncome - halfSeTaxDeduction - standardDeduction);
-
-            // 3. Estimated Federal Income Tax
-            const fedTax = calcFederalIncomeTax(taxableIncome, filingStatus);
-
-            // 4. State Tax Estimate
-            const stateTax = netIncome * stateTaxRate;
-
-            // Total Calculations
-            const totalTax = seTax + fedTax + stateTax;
-            const takeHome = Math.max(0, netIncome - totalTax);
-
-            // Calculate effective rate based on gross income (highly useful metric)
-            currentEffectiveTaxPercentage = annualGross > 0 ? (totalTax / annualGross) * 100 : 0;
-
-            // Update UI Fields
-            document.getElementById('seTaxVal').textContent = formatDollar(seTax);
-            document.getElementById('fedTaxVal').textContent = formatDollar(fedTax);
-            document.getElementById('stateTaxVal').textContent = formatDollar(stateTax);
-            document.getElementById('takeHomeVal').textContent = formatDollar(takeHome);
-            document.getElementById('effectiveTaxRate').textContent = `${currentEffectiveTaxPercentage.toFixed(1)}%`;
-
-            // Adjust Bar Graphs
-            const sePercent = annualGross > 0 ? (seTax / annualGross) * 100 : 0;
-            const fedPercent = annualGross > 0 ? (fedTax / annualGross) * 100 : 0;
-            const statePercent = annualGross > 0 ? (stateTax / annualGross) * 100 : 0;
-            const takeHomePercent = annualGross > 0 ? (takeHome / annualGross) * 100 : 0;
-
-            document.getElementById('barSeTax').style.width = `${sePercent}%`;
-            document.getElementById('barFedTax').style.width = `${fedPercent}%`;
-            document.getElementById('barStateTax').style.width = `${statePercent}%`;
-            document.getElementById('barTakeHome').style.width = `${takeHomePercent}%`;
-
-            // Re-calculate the invoice splitter dynamically based on the calculated tax profiles
-            calculateInvoiceSplit();
-        }
-
-        // Invoice Splitter utility logic
-        function calculateInvoiceSplit() {
-            const invoiceAmt = parseFloat(document.getElementById('invoiceInput').value) || 0;
-            localStorage.setItem('taxHub_invoice', invoiceAmt);
-
-            // Base the savings percentage dynamically off the overall projected effective tax rate + a 3% buffer for safety.
-            const taxSavePercentage = Math.min(60, Math.max(15, currentEffectiveTaxPercentage + 3)); 
+            // 2. Federal Income Tax Estimation
+            // Half of SE tax is deductible from adjusted gross income
+            const seDeduction = seTax * 0.5;
             
-            const taxToSave = invoiceAmt * (taxSavePercentage / 100);
-            const safeToSpend = invoiceAmt - taxToSave;
-
-            document.getElementById('invoiceTaxSave').textContent = formatDollar(taxToSave);
-            document.getElementById('invoiceSafeToSpend').textContent = formatDollar(safeToSpend);
-            document.getElementById('invoiceTaxPercent').textContent = `Save ${taxSavePercentage.toFixed(0)}%`;
-            document.getElementById('invoiceSpendPercent').textContent = `Spend ${(100 - taxSavePercentage).toFixed(0)}%`;
-        }
-
-        // Checklist State Persistence
-        function saveChecks() {
-            const checks = {
-                q1: document.getElementById('q1Check').checked,
-                q2: document.getElementById('q2Check').checked,
-                q3: document.getElementById('q3Check').checked,
-                q4: document.getElementById('q4Check').checked,
-            };
-            localStorage.setItem('taxHub_checks', JSON.stringify(checks));
-        }
-
-        function loadSavedData() {
-            if (localStorage.getItem('taxHub_gross') !== null) {
-                document.getElementById('annualGross').value = localStorage.getItem('taxHub_gross');
-            }
-            if (localStorage.getItem('taxHub_expenses') !== null) {
-                document.getElementById('annualExpenses').value = localStorage.getItem('taxHub_expenses');
-            }
-            if (localStorage.getItem('taxHub_status') !== null) {
-                document.getElementById('filingStatus').value = localStorage.getItem('taxHub_status');
-            }
-            if (localStorage.getItem('taxHub_stateRate') !== null) {
-                document.getElementById('stateTaxRate').value = localStorage.getItem('taxHub_stateRate');
-            }
-            if (localStorage.getItem('taxHub_invoice') !== null) {
-                document.getElementById('invoiceInput').value = localStorage.getItem('taxHub_invoice');
-            }
+            // Standard Deduction for 2024
+            const standardDeduction = state.filingStatus === 'single' ? 14600 : 29200;
             
-            // Checkbox loads
-            const checks = JSON.parse(localStorage.getItem('taxHub_checks'));
-            if (checks) {
-                document.getElementById('q1Check').checked = checks.q1 || false;
-                document.getElementById('q2Check').checked = checks.q2 || false;
-                document.getElementById('q3Check').checked = checks.q3 || false;
-                document.getElementById('q4Check').checked = checks.q4 || false;
-            }
+            // Qualified Business Income (QBI) Deduction (simplified: 20% of net income after SE deduction)
+            const basicQBIDeduction = Math.max(0, (netProfit - seDeduction) * 0.20);
 
-            calculateTaxes();
+            // Total Fed Deductions
+            const totalDeductions = standardDeduction + seDeduction + basicQBIDeduction;
+            const federalTaxableIncome = Math.max(0, netProfit - totalDeductions);
+
+            const federalTax = calculateFederalIncomeTax(federalTaxableIncome);
+
+            // 3. State Tax
+            const stateTax = netProfit * state.stateTaxRate;
+
+            // 4. Summaries
+            const totalTax = seTax + federalTax + stateTax;
+            const takeHomePay = Math.max(0, netProfit - totalTax);
+            
+            // Effective Tax Rate
+            const effectiveTaxRate = state.grossIncome > 0 ? (totalTax / state.grossIncome) * 100 : 0;
+
+            // Update UI Outputs
+            document.getElementById('pay-take-home').textContent = formatCurrency(takeHomePay);
+            document.getElementById('tax-effective-rate').textContent = `${effectiveTaxRate.toFixed(1)}%`;
+            
+            document.getElementById('val-gross').textContent = formatCurrency(state.grossIncome);
+            document.getElementById('val-expenses').textContent = `-${formatCurrency(totalExpenses)}`;
+            document.getElementById('val-net-profit').textContent = formatCurrency(netProfit);
+            
+            document.getElementById('val-se-tax').textContent = formatCurrency(seTax);
+            document.getElementById('val-fed-tax').textContent = formatCurrency(federalTax);
+            document.getElementById('val-state-tax').textContent = formatCurrency(stateTax);
+            document.getElementById('val-total-tax').textContent = formatCurrency(totalTax);
+
+            // Quarterly Estimated Planner
+            const quarterlyPayment = totalTax / 4;
+            document.getElementById('quarterly-estimate').textContent = formatCurrency(quarterlyPayment);
+            const reservePercent = state.grossIncome > 0 ? (totalTax / state.grossIncome) * 100 : 0;
+            document.getElementById('reserve-percent').textContent = `${Math.ceil(reservePercent)}%`;
+
+            // Update Breakdown Ratio bar charts
+            updateVisualRatios(state.grossIncome, takeHomePay, totalExpenses, totalTax);
+            
+            // Update live writeoff calculations in background too
+            calculateWriteoffSavings();
+            
+            saveState();
         }
 
-        function resetData() {
-            if (confirm("Are you sure you want to clear your local inputs and reset to default estimates?")) {
-                localStorage.clear();
-                document.getElementById('annualGross').value = 85000;
-                document.getElementById('annualExpenses').value = 12000;
-                document.getElementById('filingStatus').value = "single";
-                document.getElementById('stateTaxRate').value = 5;
-                document.getElementById('invoiceInput').value = 2500;
-                document.getElementById('q1Check').checked = false;
-                document.getElementById('q2Check').checked = false;
-                document.getElementById('q3Check').checked = false;
-                document.getElementById('q4Check').checked = false;
-                calculateTaxes();
-            }
-        }
-
-        // Live Countdown Logic to next quarterly payment deadline
-        function updateDeadlines() {
-            const now = new Date();
-            const deadlines = [
-                { name: "Q1 Payment (April 15)", date: new Date(now.getFullYear(), 3, 15, 23, 59, 59) },
-                { name: "Q2 Payment (June 17)", date: new Date(now.getFullYear(), 5, 17, 23, 59, 59) },
-                { name: "Q3 Payment (Sept 16)", date: new Date(now.getFullYear(), 8, 16, 23, 59, 59) },
-                { name: "Q4 Payment (Jan 15)", date: new Date(now.getFullYear() + (now.getMonth() === 11 && now.getDate() > 15 ? 1 : 0), 0, 15, 23, 59, 59) }
-            ];
-
-            // Find the closest upcoming deadline
-            let targetDeadline = deadlines[0];
-            for (let i = 0; i < deadlines.length; i++) {
-                if (now < deadlines[i].date) {
-                    targetDeadline = deadlines[i];
-                    break;
-                }
+        function updateVisualRatios(gross, takeHome, expenses, tax) {
+            if (gross <= 0) {
+                // Set default/empty visual state
+                setBarPercentage('bar-takehome', 100, "100%");
+                setBarPercentage('bar-expenses', 0, "0%");
+                setBarPercentage('bar-taxes', 0, "0%");
+                return;
             }
 
-            const difference = targetDeadline.date - now;
-            const daysLeft = Math.ceil(difference / (1000 * 60 * 60 * 24));
+            const pctTakeHome = (takeHome / gross) * 100;
+            const pctExpenses = (expenses / gross) * 100;
+            const pctTax = (tax / gross) * 100;
 
-            document.getElementById('nextDeadlineName').textContent = targetDeadline.name;
-            document.getElementById('countdownDays').textContent = daysLeft > 0 ? daysLeft : 0;
+            // Format nicely
+            document.getElementById('pct-takehome').textContent = `${pctTakeHome.toFixed(0)}%`;
+            document.getElementById('pct-expenses').textContent = `${pctExpenses.toFixed(0)}%`;
+            document.getElementById('pct-taxes').textContent = `${pctTax.toFixed(0)}%`;
+
+            setBarPercentage('bar-takehome', pctTakeHome, pctTakeHome > 12 ? `${pctTakeHome.toFixed(0)}%` : '');
+            setBarPercentage('bar-expenses', pctExpenses, pctExpenses > 12 ? `${pctExpenses.toFixed(0)}%` : '');
+            setBarPercentage('bar-taxes', pctTax, pctTax > 12 ? `${pctTax.toFixed(0)}%` : '');
         }
 
-        // Initialize state on render
-        window.onload = () => {
-            loadSavedData();
-            updateDeadlines();
-        };
+        function setBarPercentage(id, pct, text) {
+            const bar = document.getElementById(id);
+            bar.style.width = `${pct}%`;
+            bar.textContent = text;
+        }
     </script>
-
 </body>
 </html>
