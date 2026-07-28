@@ -22,17 +22,24 @@ import random
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from google import genai
+from google.genai import types
 
-# Use a stable, widely available model
-MODEL_NAME = "gemini-1.5-pro"   # <-- changed to gemini-1.5-pro
 CONFIG_DIR = Path("config")
 REGISTRY_FILE = CONFIG_DIR / "tools.json"
 
-# Hardcoded pool of tool ideas – you can extend this or let Gemini generate
-# a completely novel idea later.
+# List of candidate models to try (ordered by preference)
+CANDIDATE_MODELS = [
+    "gemini-2.0-flash-exp",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-pro",
+    "gemini-1.0-pro",
+]
+
+# Hardcoded pool of tool ideas – extend as needed.
 TOOL_IDEAS = [
     "Freelance Hourly Rate Calculator",
     "SaaS Churn Calculator",
@@ -106,11 +113,9 @@ Return ONLY the JSON object, without any Markdown fences or extra commentary.
 def extract_json(text: str) -> Dict[str, Any]:
     """Strip Markdown fences and parse JSON from the model's response."""
     text = text.strip()
-    # Remove possible Markdown code fences
     fence_match = re.match(r"^```(?:json)?\s*\n?(.*?)\n?```$", text, re.DOTALL)
     if fence_match:
         text = fence_match.group(1).strip()
-    # If it still contains surrounding text, try to extract a JSON block
     json_match = re.search(r"\{.*\}", text, re.DOTALL)
     if json_match:
         text = json_match.group(0)
@@ -133,35 +138,43 @@ def write_registry(registry: List[Dict[str, Any]]) -> None:
         f.write("\n")
 
 
-def generate_tool_definition(tool_idea: str, client: genai.Client) -> Dict[str, Any]:
-    """Ask Gemini to generate a complete tool definition."""
-    prompt = build_tool_prompt(tool_idea)
-    print(f"Requesting {MODEL_NAME} to define tool: {tool_idea}")
-
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-    )
-
-    if not response.text:
-        raise RuntimeError("Empty response from Gemini.")
-
-    try:
-        definition = extract_json(response.text)
-    except (json.JSONDecodeError, ValueError) as e:
-        # Save the raw response for debugging, then abort.
-        raw_file = REGISTRY_FILE.parent / "error_response.txt"
-        raw_file.write_text(response.text, encoding="utf-8")
-        raise RuntimeError(f"Failed to parse Gemini response as JSON. Raw response saved to {raw_file}") from e
-
-    # Validate required fields
-    required = ["id", "slug", "subdomain", "category", "title", "description",
-                "systemPrompt", "jsonSchema", "seo"]
-    for field in required:
-        if field not in definition:
-            raise ValueError(f"Missing required field '{field}' in Gemini response.")
-
-    return definition
+def generate_tool_definition_with_fallback(tool_idea: str, client: genai.Client) -> tuple[Dict[str, Any], str]:
+    """
+    Try each candidate model until one succeeds. Returns (definition, model_used).
+    """
+    last_error = None
+    for model_name in CANDIDATE_MODELS:
+        print(f"Attempting with model: {model_name}")
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=build_tool_prompt(tool_idea),
+            )
+            if not response.text:
+                raise RuntimeError("Empty response from Gemini.")
+            definition = extract_json(response.text)
+            # Validate required fields
+            required = ["id", "slug", "subdomain", "category", "title", "description",
+                        "systemPrompt", "jsonSchema", "seo"]
+            for field in required:
+                if field not in definition:
+                    raise ValueError(f"Missing required field '{field}' in Gemini response.")
+            # Success
+            print(f"✅ Success with model: {model_name}")
+            return definition, model_name
+        except Exception as e:
+            # Check if it's a 404 or model not found error
+            error_msg = str(e)
+            if "404" in error_msg or "not found" in error_msg.lower() or "not supported" in error_msg.lower():
+                print(f"   Model {model_name} not available: {e}")
+                last_error = e
+                continue
+            else:
+                # Other errors (e.g., JSON parsing) – we could retry, but we'll raise
+                print(f"   Unexpected error with {model_name}: {e}")
+                raise
+    # If we exhaust all models
+    raise RuntimeError(f"All candidate models failed. Last error: {last_error}")
 
 
 def main() -> None:
@@ -170,20 +183,18 @@ def main() -> None:
         print("ERROR: GEMINI_API_KEY environment variable is not set.", file=sys.stderr)
         sys.exit(1)
 
-    # 1. Pick a tool idea (could be randomized from list, or let Gemini suggest one)
     tool_idea = random.choice(TOOL_IDEAS)
     print(f"Selected tool idea: {tool_idea}")
 
     client = genai.Client(api_key=api_key)
 
-    # 2. Generate tool definition from Gemini
     try:
-        new_tool = generate_tool_definition(tool_idea, client)
+        new_tool, used_model = generate_tool_definition_with_fallback(tool_idea, client)
     except Exception as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # 3. Load existing registry, check for duplicate id/slug/subdomain
+    # Duplicate checks
     registry = load_existing_registry()
     existing_ids = {tool["id"] for tool in registry}
     existing_slugs = {tool["slug"] for tool in registry}
@@ -199,17 +210,17 @@ def main() -> None:
         print(f"WARNING: Tool with subdomain '{new_tool['subdomain']}' already exists. Skipping.", file=sys.stderr)
         sys.exit(0)
 
-    # 4. Append and save
     registry.append(new_tool)
     write_registry(registry)
     print(f"Appended new tool '{new_tool['title']}' (id: {new_tool['id']}) to {REGISTRY_FILE}")
 
-    # 5. Set GitHub outputs for the PR title/body
+    # GitHub outputs
     github_output = os.environ.get("GITHUB_OUTPUT")
     if github_output:
         with open(github_output, "a", encoding="utf-8") as f:
             f.write(f"tool_id={new_tool['id']}\n")
             f.write(f"tool_title={new_tool['title']}\n")
+            f.write(f"model_used={used_model}\n")
 
 
 if __name__ == "__main__":
