@@ -22,16 +22,15 @@ import random
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from google import genai
-from google.genai import types
 
 CONFIG_DIR = Path("config")
 REGISTRY_FILE = CONFIG_DIR / "tools.json"
 
-# Known fallback models if the API doesn't return any suitable ones
-FALLBACK_MODELS = [
+# Known working models – ordered by preference (newest first)
+CANDIDATE_MODELS = [
     "gemini-2.0-flash-exp",
     "gemini-1.5-flash",
     "gemini-1.5-pro",
@@ -140,54 +139,29 @@ def write_registry(registry: List[Dict[str, Any]]) -> None:
 
 def get_available_model(client: genai.Client) -> str:
     """
-    Query the API for a list of models and pick one that supports generateContent.
-    Returns a model name string, or raises an error if none found.
+    Try each candidate model with a minimal test call.
+    Returns the first model that responds successfully.
     """
-    try:
-        models = client.models.list()
-        # Filter to models that support generateContent and have 'gemini' in name
-        candidates = []
-        for model in models:
-            if hasattr(model, 'supported_generation_methods') and 'generateContent' in model.supported_generation_methods:
-                if 'gemini' in model.name.lower():
-                    candidates.append(model.name)
-        if candidates:
-            # Prefer flash models (faster, cheaper) but take the first found
-            # You could sort or pick a specific one
-            selected = candidates[0]
-            print(f"Found available model from API: {selected}")
-            return selected
-        else:
-            print("No suitable models found via API. Falling back to hardcoded list.")
-            # Fallback: try each hardcoded model until one works
-            for model_name in FALLBACK_MODELS:
-                try:
-                    # Quick test: call generate_content with a minimal prompt to see if it works
-                    test_response = client.models.generate_content(
-                        model=model_name,
-                        contents="Hello"
-                    )
-                    if test_response.text:
-                        print(f"Fallback model {model_name} is available.")
-                        return model_name
-                except Exception:
-                    continue
-            raise RuntimeError("No working Gemini model found.")
-    except Exception as e:
-        print(f"Error listing models: {e}. Using fallback list.")
-        # Fallback to trying each hardcoded model
-        for model_name in FALLBACK_MODELS:
-            try:
-                test_response = client.models.generate_content(
-                    model=model_name,
-                    contents="Hello"
-                )
-                if test_response.text:
-                    print(f"Fallback model {model_name} is available.")
-                    return model_name
-            except Exception:
+    for model in CANDIDATE_MODELS:
+        try:
+            # Minimal prompt to test availability
+            response = client.models.generate_content(
+                model=model,
+                contents="Hello"
+            )
+            if response.text:
+                print(f"✅ Model {model} is available.")
+                return model
+        except Exception as e:
+            # If it's a 404 or "not found", continue to next
+            if "404" in str(e) or "not found" in str(e).lower() or "not supported" in str(e).lower():
+                print(f"   Model {model} not available: {e}")
                 continue
-        raise RuntimeError("No working Gemini model found.")
+            else:
+                # Unexpected error – still try next models
+                print(f"   Unexpected error with {model}: {e}")
+                continue
+    raise RuntimeError("No working Gemini model found.")
 
 
 def generate_tool_definition(tool_idea: str, client: genai.Client, model_name: str) -> Dict[str, Any]:
@@ -232,7 +206,7 @@ def main() -> None:
     client = genai.Client(api_key=api_key)
 
     try:
-        # Get a working model
+        # Find a working model
         model_name = get_available_model(client)
         # Generate the definition
         new_tool = generate_tool_definition(tool_idea, client, model_name)
